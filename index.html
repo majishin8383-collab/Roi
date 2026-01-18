@@ -1,0 +1,87 @@
+<!doctype html>
+<html>
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>ROI Scanner — Build 1 Test</title>
+  <style>
+    body{font-family:system-ui,Arial;margin:16px}
+    pre{white-space:pre-wrap;background:#f5f5f5;padding:12px;border-radius:8px}
+    button{padding:10px 14px;font-size:16px}
+  </style>
+</head>
+<body>
+  <h1>ROI Scanner — Build 1 Test</h1>
+  <button id="run">Run Build 1 Test</button>
+  <pre id="out">Click the button…</pre>
+
+  <script type="module">
+    import {
+      DEFAULTS,
+      buildCompStats,
+      estimateGradePotential,
+      scoreListing,
+      passesThresholds
+    } from "./js/core/index.js";
+
+    const out = document.getElementById("out");
+    document.getElementById("run").addEventListener("click", () => {
+      const listing = {
+        itemId: "abc123",
+        url: "https://example.com",
+        title: "Pokemon Charizard ex 215/198 Alt Art NM",
+        conditionText: "Used",
+        purchaseFormat: "BIN",
+        price: 60,
+        shipping: 4,
+        currency: "USD",
+        sellerId: "seller1",
+        sellerFeedbackPct: 99.4,
+        sellerFeedbackCount: 500,
+        returnsAccepted: true,
+        locationCountry: "US",
+        listedAtISO: new Date().toISOString(),
+        imageUrls: [],
+        parsed: {
+          game: "pokemon",
+          rawOrGraded: "RAW",
+          cardName: "Charizard ex",
+          setName: "Obsidian Flames",
+          cardNumber: "215/198",
+          tags: ["alt-art"],
+          grader: null,
+          grade: null,
+          rawConditionHint: "NM"
+        }
+      };
+
+      const compRaw = buildCompStats("charizard|raw", [110,115,118,120], 6, 12);
+
+      const gp = estimateGradePotential(
+        { centeringFront: 0.56, centeringBack: 0.57, cornerRisk: 0.2, edgeRisk: 0.2, surfaceRisk: 0.2 },
+        "HIGH"
+      );
+
+      const comp10 = buildCompStats("charizard|psa10", [220,230,240], 3, 8);
+      const comp9  = buildCompStats("charizard|psa9",  [150,155,160], 5, 10);
+      const comp8  = buildCompStats("charizard|psa8",  [120,125], 2, 5);
+
+      const deal = scoreListing(listing, compRaw, {
+        cfg: DEFAULTS,
+        gradePotential: gp,
+        compPSA10: comp10,
+        compPSA9: comp9,
+        compPSA8: comp8
+      });
+
+      out.textContent = JSON.stringify(
+        { ok: passesThresholds(deal, DEFAULTS), deal },
+        null,
+        2
+      );
+
+      console.log(deal);
+    });
+  </script>
+</body>
+</html>
