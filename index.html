@@ -1,86 +1,104 @@
 <!doctype html>
-<html>
+<html lang="en">
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ROI Scanner — Build 1 Test</title>
+  <title>ROI Scanner — Manual Radar</title>
+
   <style>
-    body{font-family:system-ui,Arial;margin:16px}
-    pre{white-space:pre-wrap;background:#f5f5f5;padding:12px;border-radius:8px}
-    button{padding:10px 14px;font-size:16px}
+    body {
+      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
+      margin: 16px;
+      background: #fafafa;
+      color: #111;
+    }
+    h1 {
+      font-size: 1.4rem;
+      margin-bottom: 8px;
+    }
+    button {
+      padding: 12px 16px;
+      font-size: 16px;
+      border-radius: 8px;
+      border: none;
+      background: #2563eb;
+      color: white;
+      cursor: pointer;
+    }
+    button:active {
+      transform: scale(0.98);
+    }
+    pre {
+      white-space: pre-wrap;
+      word-break: break-word;
+      background: #f3f4f6;
+      padding: 12px;
+      border-radius: 8px;
+      margin-top: 16px;
+      font-size: 13px;
+      line-height: 1.4;
+      max-height: 65vh;
+      overflow: auto;
+    }
+    .hint {
+      font-size: 13px;
+      color: #555;
+      margin-bottom: 12px;
+    }
   </style>
 </head>
+
 <body>
-  <h1>ROI Scanner — Build 1 Test</h1>
-  <button id="run">Run Build 1 Test</button>
-  <pre id="out">Click the button…</pre>
+  <h1>ROI Scanner — Manual Radar Test</h1>
+  <div class="hint">
+    Build 1 (engine) + Build 2 (manual radar) are active.<br>
+    Tap the button to run sample listings through the scoring engine.
+  </div>
+
+  <button id="run">Run Radar</button>
+
+  <pre id="out">Waiting…</pre>
 
   <script type="module">
-    import {
-      DEFAULTS,
-      buildCompStats,
-      estimateGradePotential,
-      scoreListing,
-      passesThresholds
-    } from "./js/core/index.js";
+    import { demoRunRadar } from "./js/app/testRadar.js";
 
     const out = document.getElementById("out");
-    document.getElementById("run").addEventListener("click", () => {
-      const listing = {
-        itemId: "abc123",
-        url: "https://example.com",
-        title: "Pokemon Charizard ex 215/198 Alt Art NM",
-        conditionText: "Used",
-        purchaseFormat: "BIN",
-        price: 60,
-        shipping: 4,
-        currency: "USD",
-        sellerId: "seller1",
-        sellerFeedbackPct: 99.4,
-        sellerFeedbackCount: 500,
-        returnsAccepted: true,
-        locationCountry: "US",
-        listedAtISO: new Date().toISOString(),
-        imageUrls: [],
-        parsed: {
-          game: "pokemon",
-          rawOrGraded: "RAW",
-          cardName: "Charizard ex",
-          setName: "Obsidian Flames",
-          cardNumber: "215/198",
-          tags: ["alt-art"],
-          grader: null,
-          grade: null,
-          rawConditionHint: "NM"
-        }
-      };
+    const btn = document.getElementById("run");
 
-      const compRaw = buildCompStats("charizard|raw", [110,115,118,120], 6, 12);
+    btn.addEventListener("click", () => {
+      try {
+        const deals = demoRunRadar();
 
-      const gp = estimateGradePotential(
-        { centeringFront: 0.56, centeringBack: 0.57, cornerRisk: 0.2, edgeRisk: 0.2, surfaceRisk: 0.2 },
-        "HIGH"
-      );
+        out.textContent = JSON.stringify(
+          deals.map(d => ({
+            dealType: d.dealType,
+            netProfit: d.netProfit,
+            roi: Math.round(d.roi * 100) + "%",
+            confidence: d.confidence,
+            liquidity: d.liquidity,
+            score: d.score,
+            title: d.listing.title,
+            priceIn: d.totalCostIn,
+            expectedResale: d.expectedResale,
+            url: d.listing.url,
+            gradePotential: d.gradePotential
+              ? {
+                  psa10: Math.round(d.gradePotential.psa10 * 100) + "%",
+                  psa9:  Math.round(d.gradePotential.psa9 * 100) + "%",
+                  psa8:  Math.round(d.gradePotential.psa8 * 100) + "%",
+                  confidence: d.gradePotential.photoConfidence
+                }
+              : null
+          })),
+          null,
+          2
+        );
 
-      const comp10 = buildCompStats("charizard|psa10", [220,230,240], 3, 8);
-      const comp9  = buildCompStats("charizard|psa9",  [150,155,160], 5, 10);
-      const comp8  = buildCompStats("charizard|psa8",  [120,125], 2, 5);
-
-      const deal = scoreListing(listing, compRaw, {
-        cfg: DEFAULTS,
-        gradePotential: gp,
-        compPSA10: comp10,
-        compPSA9: comp9,
-        compPSA8: comp8
-      });
-
-      out.textContent = JSON.stringify(
-        { ok: passesThresholds(deal, DEFAULTS), deal },
-        null,
-        2
-      );
-
-      console.log(deal);
+        console.log("Radar results:", deals);
+      } catch (err) {
+        out.textContent = "ERROR:\n" + (err?.message || err);
+        console.error(err);
+      }
     });
   </script>
 </body>
