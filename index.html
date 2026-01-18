@@ -3,125 +3,445 @@
 <head>
   <meta charset="utf-8" />
   <meta name="viewport" content="width=device-width,initial-scale=1" />
-  <title>ROI Scanner — Manual Radar</title>
+  <title>ROI Scanner — Radar</title>
 
   <style>
-    body {
-      font-family: system-ui, -apple-system, BlinkMacSystemFont, sans-serif;
-      margin: 16px;
-      background: #fafafa;
-      color: #111;
+    :root{
+      --bg:#0b0c10;
+      --panel:#12141b;
+      --card:#171a22;
+      --muted:#9aa4b2;
+      --text:#eef2ff;
+      --line:#2a2f3b;
+      --accent:#4f46e5;
+      --good:#22c55e;
+      --warn:#f59e0b;
+      --bad:#ef4444;
+      --chip:#222636;
+      --shadow: 0 10px 30px rgba(0,0,0,.35);
+      --r: 14px;
     }
-    h1 { font-size: 1.4rem; margin-bottom: 8px; }
-    .hint { font-size: 13px; color: #555; margin-bottom: 12px; }
-    button {
-      padding: 12px 16px;
-      font-size: 16px;
-      border-radius: 8px;
-      border: none;
-      background: #2563eb;
-      color: white;
-      cursor: pointer;
+    *{box-sizing:border-box}
+    body{
+      margin:0;
+      font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Arial,sans-serif;
+      background: radial-gradient(1200px 700px at 20% -10%, rgba(79,70,229,.35), transparent 55%),
+                  radial-gradient(900px 500px at 100% 0%, rgba(34,197,94,.20), transparent 50%),
+                  var(--bg);
+      color:var(--text);
     }
-    button:active { transform: scale(0.98); }
-    pre {
-      white-space: pre-wrap;
-      word-break: break-word;
-      background: #f3f4f6;
-      padding: 12px;
-      border-radius: 8px;
-      margin-top: 16px;
-      font-size: 13px;
-      line-height: 1.4;
-      max-height: 65vh;
-      overflow: auto;
+    header{
+      position:sticky;
+      top:0;
+      z-index:10;
+      backdrop-filter: blur(10px);
+      background: rgba(11,12,16,.72);
+      border-bottom:1px solid var(--line);
+    }
+    .wrap{max-width:960px;margin:0 auto;padding:14px 14px;}
+    .top{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:12px;
+    }
+    h1{
+      font-size:18px;
+      margin:0;
+      letter-spacing:.2px;
+    }
+    .sub{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:2px;
+    }
+    .btn{
+      appearance:none;
+      border:1px solid rgba(255,255,255,.10);
+      background: linear-gradient(180deg, rgba(79,70,229,.95), rgba(79,70,229,.75));
+      color:white;
+      padding:10px 12px;
+      border-radius:12px;
+      font-weight:700;
+      cursor:pointer;
+      box-shadow: var(--shadow);
+    }
+    .btn:active{transform:scale(.99)}
+    .btn.secondary{
+      background: rgba(255,255,255,.06);
+      box-shadow:none;
+    }
+
+    .controls{
+      margin-top:12px;
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap:10px;
+    }
+    .control{
+      background: rgba(255,255,255,.04);
+      border:1px solid rgba(255,255,255,.08);
+      border-radius: var(--r);
+      padding:10px;
+    }
+    .label{
+      display:flex;
+      align-items:center;
+      justify-content:space-between;
+      gap:10px;
+      font-size:12px;
+      color:var(--muted);
+      margin-bottom:8px;
+    }
+    input[type="range"]{width:100%}
+    .toggles{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .toggle{
+      display:flex;
+      align-items:center;
+      gap:8px;
+      padding:8px 10px;
+      border-radius: 999px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.08);
+      font-size:12px;
+      color:var(--text);
+      user-select:none;
+    }
+    .toggle input{accent-color: var(--accent);}
+
+    main{padding:14px 14px 40px;}
+    .grid{
+      max-width:960px;
+      margin:0 auto;
+      display:grid;
+      grid-template-columns: 1fr;
+      gap:12px;
+    }
+
+    .card{
+      background: linear-gradient(180deg, rgba(255,255,255,.04), rgba(255,255,255,.02));
+      border: 1px solid rgba(255,255,255,.08);
+      border-radius: var(--r);
+      padding:12px;
+      box-shadow: var(--shadow);
+    }
+    .row{
+      display:flex;
+      align-items:flex-start;
+      justify-content:space-between;
+      gap:12px;
+    }
+    .title{
+      font-weight:800;
+      font-size:14px;
+      line-height:1.25;
+      margin:0 0 6px 0;
+    }
+    .meta{
+      font-size:12px;
+      color:var(--muted);
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+    }
+    .chips{
+      display:flex;
+      gap:8px;
+      flex-wrap:wrap;
+      margin-top:10px;
+    }
+    .chip{
+      background: rgba(34, 38, 54, .9);
+      border: 1px solid rgba(255,255,255,.08);
+      padding:6px 8px;
+      border-radius: 999px;
+      font-size:12px;
+      color: var(--text);
+    }
+    .chip.good{border-color: rgba(34,197,94,.35); color: #bbf7d0;}
+    .chip.warn{border-color: rgba(245,158,11,.35); color: #fde68a;}
+    .chip.bad {border-color: rgba(239,68,68,.35); color: #fecaca;}
+    .chip.type{border-color: rgba(79,70,229,.35); color: #c7d2fe;}
+
+    .actions{
+      display:flex;
+      flex-direction:column;
+      gap:8px;
+      min-width:120px;
+      align-items:flex-end;
+    }
+    .open{
+      text-decoration:none;
+      text-align:center;
+      padding:10px 10px;
+      border-radius:12px;
+      background: rgba(255,255,255,.06);
+      border:1px solid rgba(255,255,255,.10);
+      color: var(--text);
+      font-weight:700;
+      font-size:13px;
+    }
+
+    .empty{
+      max-width:960px;
+      margin:16px auto 0;
+      padding:16px;
+      border-radius: var(--r);
+      border:1px dashed rgba(255,255,255,.18);
+      color: var(--muted);
+      background: rgba(255,255,255,.03);
+    }
+
+    .footerNote{
+      max-width:960px;
+      margin:10px auto 0;
+      padding:0 14px;
+      color: var(--muted);
+      font-size:12px;
     }
   </style>
 </head>
 
 <body>
-  <h1>ROI Scanner — Manual Radar</h1>
-  <div class="hint">
-    Cache-busting enabled. Latest code is always loaded.
-  </div>
+  <header>
+    <div class="wrap">
+      <div class="top">
+        <div>
+          <h1>ROI Scanner — Radar</h1>
+          <div class="sub">Build 3 UI (manual radar). Cache-busted modules. eBay-only later.</div>
+        </div>
+        <div style="display:flex; gap:10px;">
+          <button id="run" class="btn">Run Radar</button>
+          <button id="reset" class="btn secondary">Reset Filters</button>
+        </div>
+      </div>
 
-  <button id="run">Run Radar</button>
+      <div class="controls">
+        <div class="control">
+          <div class="label">
+            <span>Min Profit ($)</span>
+            <strong id="profitVal">15</strong>
+          </div>
+          <input id="minProfit" type="range" min="0" max="200" step="1" value="15" />
+        </div>
 
-  <pre id="out">BOOT: waiting…</pre>
+        <div class="control">
+          <div class="label">
+            <span>Min ROI (%)</span>
+            <strong id="roiVal">25</strong>
+          </div>
+          <input id="minROI" type="range" min="0" max="200" step="1" value="25" />
+        </div>
+      </div>
+
+      <div class="toggles">
+        <label class="toggle"><input id="binOnly" type="checkbox" checked /> BIN only</label>
+        <label class="toggle"><input id="showRaw" type="checkbox" checked /> Raw</label>
+        <label class="toggle"><input id="showGraded" type="checkbox" checked /> Graded</label>
+        <label class="toggle"><input id="showGradeUpside" type="checkbox" checked /> Grade-upside</label>
+      </div>
+    </div>
+  </header>
+
+  <main>
+    <div id="grid" class="grid"></div>
+    <div id="empty" class="empty" style="display:none;">
+      No deals match your filters yet. Try lowering Min Profit/ROI, or run radar again.
+    </div>
+    <div class="footerNote">
+      Note: This is currently manual radar mode. Next builds will replace manual inputs/comps with automated ingest.
+    </div>
+  </main>
 
   <script type="module">
-    const out = document.getElementById("out");
-    const btn = document.getElementById("run");
+    const CACHE_BUSTER = Date.now();
 
-    const CACHE_BUSTER = Date.now(); // 🔒 automatic, per-load
+    const grid = document.getElementById("grid");
+    const empty = document.getElementById("empty");
+    const runBtn = document.getElementById("run");
+    const resetBtn = document.getElementById("reset");
 
-    function show(msg) {
-      out.textContent = String(msg);
+    const minProfitEl = document.getElementById("minProfit");
+    const minROIEl = document.getElementById("minROI");
+    const profitVal = document.getElementById("profitVal");
+    const roiVal = document.getElementById("roiVal");
+
+    const binOnlyEl = document.getElementById("binOnly");
+    const showRawEl = document.getElementById("showRaw");
+    const showGradedEl = document.getElementById("showGraded");
+    const showGradeUpsideEl = document.getElementById("showGradeUpside");
+
+    function $(id){ return document.getElementById(id); }
+
+    function money(n){
+      const v = Number(n);
+      if (!Number.isFinite(v)) return "$0";
+      return v < 0 ? `-$${Math.abs(v).toFixed(2)}` : `$${v.toFixed(2)}`;
     }
 
-    show("BOOT: loading modules (cache-busted)…");
+    function pct(n){
+      const v = Number(n);
+      if (!Number.isFinite(v)) return "0%";
+      return `${Math.round(v * 100)}%`;
+    }
 
-    // Surface all errors visibly
-    window.addEventListener("error", e => {
-      show("ERROR:\n" + (e.message || e));
-      console.error(e);
-    });
-    window.addEventListener("unhandledrejection", e => {
-      show("ERROR:\n" + (e.reason?.message || e.reason));
-      console.error(e);
-    });
+    function chipClassForProfit(p){
+      if (p >= 50) return "good";
+      if (p >= 15) return "warn";
+      return "bad";
+    }
 
+    function chipClassForConf(c){
+      if (c >= 80) return "good";
+      if (c >= 60) return "warn";
+      return "bad";
+    }
+
+    function typeLabel(t){
+      if (t === "RAW_FLIP") return "RAW";
+      if (t === "GRADED_FLIP") return "GRADED";
+      if (t === "GRADE_UPSIDE") return "GRADE-UP";
+      return t || "UNKNOWN";
+    }
+
+    function dealPassesFilters(d){
+      const minProfit = Number(minProfitEl.value);
+      const minROI = Number(minROIEl.value) / 100;
+
+      if (binOnlyEl.checked && d.listing.purchaseFormat !== "BIN") return false;
+      if (d.netProfit < minProfit) return false;
+      if (d.roi < minROI) return false;
+
+      if (d.dealType === "RAW_FLIP" && !showRawEl.checked) return false;
+      if (d.dealType === "GRADED_FLIP" && !showGradedEl.checked) return false;
+      if (d.dealType === "GRADE_UPSIDE" && !showGradeUpsideEl.checked) return false;
+
+      return true;
+    }
+
+    function renderDeals(deals){
+      grid.innerHTML = "";
+      const filtered = (deals || []).filter(dealPassesFilters);
+
+      empty.style.display = filtered.length ? "none" : "block";
+
+      for (const d of filtered){
+        const title = d.listing.title || "Untitled listing";
+        const url = d.listing.url || "#";
+
+        const profit = d.netProfit;
+        const conf = d.confidence;
+        const liq = d.liquidity;
+
+        const gp = d.gradePotential;
+        const gpText = gp
+          ? `PSA10 ${Math.round(gp.psa10*100)}% • 9 ${Math.round(gp.psa9*100)}% • 8 ${Math.round(gp.psa8*100)}% • ${gp.photoConfidence}`
+          : null;
+
+        const card = document.createElement("div");
+        card.className = "card";
+
+        card.innerHTML = `
+          <div class="row">
+            <div style="flex:1;">
+              <div class="title">${escapeHtml(title)}</div>
+              <div class="meta">
+                <span>In: ${money(d.totalCostIn)}</span>
+                <span>Resale: ${money(d.expectedResale)}</span>
+                <span>Liquidity: ${liq}</span>
+              </div>
+
+              <div class="chips">
+                <span class="chip type">${typeLabel(d.dealType)}</span>
+                <span class="chip ${chipClassForProfit(profit)}">Profit: ${money(profit)}</span>
+                <span class="chip ${chipClassForProfit(profit)}">ROI: ${pct(d.roi)}</span>
+                <span class="chip ${chipClassForConf(conf)}">Conf: ${conf}</span>
+                <span class="chip">Score: ${d.score}</span>
+                ${gpText ? `<span class="chip">Grade: ${escapeHtml(gpText)}</span>` : ``}
+              </div>
+            </div>
+
+            <div class="actions">
+              <a class="open" href="${escapeAttr(url)}" target="_blank" rel="noopener">Open</a>
+            </div>
+          </div>
+        `;
+
+        grid.appendChild(card);
+      }
+    }
+
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
+      }[c]));
+    }
+    function escapeAttr(s){
+      return String(s).replace(/"/g, "&quot;");
+    }
+
+    function syncLabels(){
+      profitVal.textContent = minProfitEl.value;
+      roiVal.textContent = minROIEl.value;
+    }
+
+    // Load demoRunRadar with cache buster
     let demoRunRadar = null;
-
     try {
       const mod = await import(`./js/app/testRadar.js?v=${CACHE_BUSTER}`);
       demoRunRadar = mod.demoRunRadar;
-
-      if (typeof demoRunRadar !== "function") {
-        show("ERROR: demoRunRadar not exported correctly.");
-      } else {
-        show("READY. Tap Run Radar.");
-      }
     } catch (err) {
-      show(
-        "IMPORT FAILED:\n" +
-        (err?.message || err) +
-        "\n\nCheck:\n" +
-        "- js/app/testRadar.js exists\n" +
-        "- Path is correct\n" +
-        "- GitHub Pages root is repo root"
-      );
+      grid.innerHTML = `<div class="empty">IMPORT FAILED: ${escapeHtml(err?.message || err)}</div>`;
       console.error(err);
     }
 
-    btn.onclick = () => {
-      if (!demoRunRadar) {
-        show("ERROR: Radar not loaded.");
+    // UI wiring
+    syncLabels();
+    minProfitEl.addEventListener("input", syncLabels);
+    minROIEl.addEventListener("input", syncLabels);
+
+    function rerenderIfHaveData(){
+      if (!window.__LAST_DEALS) return;
+      renderDeals(window.__LAST_DEALS);
+    }
+
+    for (const el of [minProfitEl, minROIEl, binOnlyEl, showRawEl, showGradedEl, showGradeUpsideEl]) {
+      el.addEventListener("input", rerenderIfHaveData);
+      el.addEventListener("change", rerenderIfHaveData);
+    }
+
+    resetBtn.addEventListener("click", () => {
+      minProfitEl.value = "15";
+      minROIEl.value = "25";
+      binOnlyEl.checked = true;
+      showRawEl.checked = true;
+      showGradedEl.checked = true;
+      showGradeUpsideEl.checked = true;
+      syncLabels();
+      rerenderIfHaveData();
+    });
+
+    runBtn.addEventListener("click", () => {
+      if (typeof demoRunRadar !== "function") {
+        grid.innerHTML = `<div class="empty">Radar not available (demoRunRadar missing). Check ./js/app/testRadar.js export.</div>`;
         return;
       }
+      const deals = demoRunRadar();
+      window.__LAST_DEALS = deals;
+      renderDeals(deals);
+    });
 
-      try {
-        show("RUNNING…");
-        const deals = demoRunRadar();
-
-        const summary = deals.map(d => ({
-          dealType: d.dealType,
-          netProfit: d.netProfit,
-          roi: Math.round(d.roi * 100) + "%",
-          confidence: d.confidence,
-          liquidity: d.liquidity,
-          score: d.score,
-          title: d.listing.title,
-          url: d.listing.url
-        }));
-
-        show(JSON.stringify(summary, null, 2));
-        console.log("Radar results:", deals);
-      } catch (err) {
-        show("RUN ERROR:\n" + (err?.message || err));
-        console.error(err);
-      }
-    };
+    // Auto-run once on load
+    if (typeof demoRunRadar === "function") {
+      const deals = demoRunRadar();
+      window.__LAST_DEALS = deals;
+      renderDeals(deals);
+    }
   </script>
 </body>
 </html>
