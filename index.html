@@ -45,8 +45,16 @@
       justify-content:space-between;
       gap:12px;
     }
-    h1{font-size:18px;margin:0;letter-spacing:.2px;}
-    .sub{font-size:12px;color:var(--muted);margin-top:2px;}
+    h1{
+      font-size:18px;
+      margin:0;
+      letter-spacing:.2px;
+    }
+    .sub{
+      font-size:12px;
+      color:var(--muted);
+      margin-top:2px;
+    }
     .btn{
       appearance:none;
       border:1px solid rgba(255,255,255,.10);
@@ -59,7 +67,10 @@
       box-shadow: var(--shadow);
     }
     .btn:active{transform:scale(.99)}
-    .btn.secondary{background: rgba(255,255,255,.06);box-shadow:none;}
+    .btn.secondary{
+      background: rgba(255,255,255,.06);
+      box-shadow:none;
+    }
 
     .controls{
       margin-top:12px;
@@ -202,7 +213,7 @@
       <div class="top">
         <div>
           <h1>ROI Scanner — Radar</h1>
-          <div class="sub">Build 3 UI (manual radar). Async-safe. Worker comps enabled.</div>
+          <div class="sub">Build 3 UI (manual radar). Cache-busted modules. eBay-only later.</div>
         </div>
         <div style="display:flex; gap:10px;">
           <button id="run" class="btn">Run Radar</button>
@@ -243,7 +254,7 @@
       No deals match your filters yet. Try lowering Min Profit/ROI, or run radar again.
     </div>
     <div class="footerNote">
-      Note: This is currently manual radar mode. Next builds will replace manual inputs with automated ingest.
+      Note: This is currently manual radar mode. Next builds will replace manual inputs/comps with automated ingest.
     </div>
   </main>
 
@@ -270,21 +281,25 @@
       if (!Number.isFinite(v)) return "$0";
       return v < 0 ? `-$${Math.abs(v).toFixed(2)}` : `$${v.toFixed(2)}`;
     }
+
     function pct(n){
       const v = Number(n);
       if (!Number.isFinite(v)) return "0%";
       return `${Math.round(v * 100)}%`;
     }
+
     function chipClassForProfit(p){
       if (p >= 50) return "good";
       if (p >= 15) return "warn";
       return "bad";
     }
+
     function chipClassForConf(c){
       if (c >= 80) return "good";
       if (c >= 60) return "warn";
       return "bad";
     }
+
     function typeLabel(t){
       if (t === "RAW_FLIP") return "RAW";
       if (t === "GRADED_FLIP") return "GRADED";
@@ -292,15 +307,27 @@
       return t || "UNKNOWN";
     }
 
+    function escapeHtml(s){
+      return String(s).replace(/[&<>"']/g, (c) => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;","\"":"&quot;","'":"&#039;"
+      }[c]));
+    }
+    function escapeAttr(s){
+      return String(s).replace(/"/g, "&quot;");
+    }
+
     function dealPassesFilters(d){
       const minProfit = Number(minProfitEl.value);
       const minROI = Number(minROIEl.value) / 100;
+
       if (binOnlyEl.checked && d.listing.purchaseFormat !== "BIN") return false;
       if (d.netProfit < minProfit) return false;
       if (d.roi < minROI) return false;
+
       if (d.dealType === "RAW_FLIP" && !showRawEl.checked) return false;
       if (d.dealType === "GRADED_FLIP" && !showGradedEl.checked) return false;
       if (d.dealType === "GRADE_UPSIDE" && !showGradeUpsideEl.checked) return false;
+
       return true;
     }
 
@@ -310,29 +337,43 @@
       empty.style.display = filtered.length ? "none" : "block";
 
       for (const d of filtered){
+        const title = d.listing.title || "Untitled listing";
+        const url = d.listing.url || "#";
+
+        const profit = d.netProfit;
+        const conf = d.confidence;
+        const liq = d.liquidity;
+
+        const gp = d.gradePotential;
+        const gpText = gp
+          ? `PSA10 ${Math.round(gp.psa10*100)}% • 9 ${Math.round(gp.psa9*100)}% • 8 ${Math.round(gp.psa8*100)}% • ${gp.photoConfidence}`
+          : null;
+
         const card = document.createElement("div");
         card.className = "card";
         card.innerHTML = `
           <div class="row">
             <div style="flex:1;">
-              <div class="title">${d.listing.title}</div>
+              <div class="title">${escapeHtml(title)}</div>
               <div class="meta">
                 <span>In: ${money(d.totalCostIn)}</span>
                 <span>Resale: ${money(d.expectedResale)}</span>
-                <span>Liquidity: ${d.liquidity}</span>
+                <span>Liquidity: ${liq}</span>
               </div>
               <div class="chips">
                 <span class="chip type">${typeLabel(d.dealType)}</span>
-                <span class="chip ${chipClassForProfit(d.netProfit)}">Profit: ${money(d.netProfit)}</span>
-                <span class="chip ${chipClassForProfit(d.netProfit)}">ROI: ${pct(d.roi)}</span>
-                <span class="chip ${chipClassForConf(d.confidence)}">Conf: ${d.confidence}</span>
+                <span class="chip ${chipClassForProfit(profit)}">Profit: ${money(profit)}</span>
+                <span class="chip ${chipClassForProfit(profit)}">ROI: ${pct(d.roi)}</span>
+                <span class="chip ${chipClassForConf(conf)}">Conf: ${conf}</span>
                 <span class="chip">Score: ${d.score}</span>
+                ${gpText ? `<span class="chip">Grade: ${escapeHtml(gpText)}</span>` : ``}
               </div>
             </div>
             <div class="actions">
-              <a class="open" href="${d.listing.url}" target="_blank" rel="noopener">Open</a>
+              <a class="open" href="${escapeAttr(url)}" target="_blank" rel="noopener">Open</a>
             </div>
-          </div>`;
+          </div>
+        `;
         grid.appendChild(card);
       }
     }
@@ -342,20 +383,27 @@
       roiVal.textContent = minROIEl.value;
     }
 
+    // Load demoRunRadar with cache buster
     let demoRunRadar = null;
     try {
       const mod = await import(`./js/app/testRadar.js?v=${CACHE_BUSTER}`);
       demoRunRadar = mod.demoRunRadar;
+      if (typeof demoRunRadar !== "function") {
+        grid.innerHTML = `<div class="empty">Radar not available (demoRunRadar missing export).</div>`;
+      }
     } catch (err) {
-      grid.innerHTML = `<div class="empty">IMPORT FAILED: ${err}</div>`;
+      grid.innerHTML = `<div class="empty">IMPORT FAILED: ${escapeHtml(err?.message || err)}</div>`;
+      console.error(err);
     }
 
+    // UI wiring
     syncLabels();
     minProfitEl.addEventListener("input", syncLabels);
     minROIEl.addEventListener("input", syncLabels);
 
     function rerenderIfHaveData(){
-      if (window.__LAST_DEALS) renderDeals(window.__LAST_DEALS);
+      if (!window.__LAST_DEALS) return;
+      renderDeals(window.__LAST_DEALS);
     }
 
     for (const el of [minProfitEl, minROIEl, binOnlyEl, showRawEl, showGradedEl, showGradeUpsideEl]) {
@@ -374,20 +422,28 @@
       rerenderIfHaveData();
     });
 
+    // ✅ ASYNC-SAFE Run Radar
     runBtn.addEventListener("click", async () => {
-      grid.innerHTML = `<div class="empty">Fetching sold comps…</div>`;
-      const deals = await demoRunRadar();
-      window.__LAST_DEALS = deals;
-      renderDeals(deals);
-    });
+      if (typeof demoRunRadar !== "function") {
+        grid.innerHTML = `<div class="empty">Radar not available (demoRunRadar missing). Check ./js/app/testRadar.js export.</div>`;
+        return;
+      }
 
-    if (typeof demoRunRadar === "function") {
-      (async () => {
-        const deals = await demoRunRadar();
+      grid.innerHTML = `<div class="empty">Running radar… fetching comps (first run may take a bit).</div>`;
+      empty.style.display = "none";
+
+      try {
+        const deals = await demoRunRadar(); // 🔑 REQUIRED
         window.__LAST_DEALS = deals;
         renderDeals(deals);
-      })();
-    }
+      } catch (err) {
+        grid.innerHTML = `<div class="empty">Radar error: ${escapeHtml(err?.message || err)}</div>`;
+        console.error(err);
+      }
+    });
+
+    // ❌ NO AUTO-RUN
+    // We do not auto-run so you don't keep seeing the demo Charizard until inputs are replaced.
   </script>
 </body>
 </html>
